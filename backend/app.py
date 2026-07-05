@@ -1,5 +1,5 @@
-from flask import Flask, jsonify, request, send_from_directory
-from flask_cors import CORS
+from flask import Flask, jsonify, request, send_from_directory # type: ignore
+from flask_cors import CORS # type: ignore
 from dotenv import load_dotenv
 import os
 import json

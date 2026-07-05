@@ -1,0 +1,6 @@
+services:
+  - type: web
+    name: truetraffic-ai
+    env: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: python -m backend.app
