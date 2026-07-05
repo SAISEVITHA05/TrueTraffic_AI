@@ -1,0 +1,178 @@
+{
+  "roads": [
+    {
+      "id": "R001",
+      "name": "Beach Road",
+      "area": "RK Beach",
+      "coordinates": [
+        [17.7231, 83.3012],
+        [17.7190, 83.3045],
+        [17.7150, 83.3078],
+        [17.7100, 83.3100]
+      ],
+      "speed_limit": 40,
+      "road_type": "coastal",
+      "known_issues": ["speeding", "night driving", "rash driving weekends"],
+      "base_risk": 75,
+      "peak_hours": ["19:00-23:00", "22:00-02:00"],
+      "description": "Coastal road along RK Beach, high speeding risk especially at night"
+    },
+    {
+      "id": "R002",
+      "name": "Hanumanthawaka Junction",
+      "area": "Hanumanthawaka",
+      "coordinates": [
+        [17.7102, 83.2156],
+        [17.7095, 83.2170],
+        [17.7088, 83.2185]
+      ],
+      "speed_limit": 30,
+      "road_type": "junction",
+      "known_issues": ["signal jumping", "congestion", "two wheeler accidents"],
+      "base_risk": 85,
+      "peak_hours": ["08:00-10:00", "17:00-20:00"],
+      "description": "Highest accident-prone junction in Visakhapatnam"
+    },
+    {
+      "id": "R003",
+      "name": "Gajuwaka Junction",
+      "area": "Gajuwaka",
+      "coordinates": [
+        [17.6801, 83.2100],
+        [17.6812, 83.2125],
+        [17.6825, 83.2150]
+      ],
+      "speed_limit": 40,
+      "road_type": "junction",
+      "known_issues": ["heavy truck traffic", "congestion", "industrial vehicles"],
+      "base_risk": 78,
+      "peak_hours": ["07:00-10:00", "16:00-20:00"],
+      "description": "Major junction near industrial area, heavy vehicle traffic"
+    },
+    {
+      "id": "R004",
+      "name": "NAD Junction",
+      "area": "NAD",
+      "coordinates": [
+        [17.7200, 83.2800],
+        [17.7215, 83.2820],
+        [17.7230, 83.2840]
+      ],
+      "speed_limit": 40,
+      "road_type": "junction",
+      "known_issues": ["signal violations", "peak hour chaos", "wrong side driving"],
+      "base_risk": 70,
+      "peak_hours": ["08:00-10:00", "17:00-19:00"],
+      "description": "Busy junction with frequent signal violations"
+    },
+    {
+      "id": "R005",
+      "name": "Steel Plant Road",
+      "area": "Steel Plant",
+      "coordinates": [
+        [17.6900, 83.2200],
+        [17.6920, 83.2250],
+        [17.6940, 83.2300]
+      ],
+      "speed_limit": 50,
+      "road_type": "highway",
+      "known_issues": ["heavy vehicles", "poor visibility", "dust"],
+      "base_risk": 72,
+      "peak_hours": ["06:00-09:00", "15:00-18:00"],
+      "description": "Industrial road with heavy vehicle movement"
+    },
+    {
+      "id": "R006",
+      "name": "MVP Colony Main Road",
+      "area": "MVP Colony",
+      "coordinates": [
+        [17.7350, 83.2950],
+        [17.7360, 83.2970],
+        [17.7370, 83.2990]
+      ],
+      "speed_limit": 40,
+      "road_type": "residential",
+      "known_issues": ["two wheeler accidents", "pedestrian crossings"],
+      "base_risk": 45,
+      "peak_hours": ["08:00-09:30", "17:30-19:00"],
+      "description": "Residential colony road, moderate risk"
+    },
+    {
+      "id": "R007",
+      "name": "Kommadi Road",
+      "area": "Kommadi",
+      "coordinates": [
+        [17.7800, 83.3200],
+        [17.7820, 83.3230],
+        [17.7840, 83.3260]
+      ],
+      "speed_limit": 60,
+      "road_type": "highway",
+      "known_issues": ["poor lighting", "highway accidents", "speeding"],
+      "base_risk": 65,
+      "peak_hours": ["20:00-23:00", "05:00-07:00"],
+      "description": "Highway stretch with poor lighting at night"
+    },
+    {
+      "id": "R008",
+      "name": "NH16 Bypass",
+      "area": "NH16",
+      "coordinates": [
+        [17.6700, 83.2000],
+        [17.6750, 83.2100],
+        [17.6800, 83.2200]
+      ],
+      "speed_limit": 80,
+      "road_type": "national highway",
+      "known_issues": ["high speed", "highway merging"],
+      "base_risk": 30,
+      "peak_hours": ["00:00-04:00"],
+      "description": "National highway, well maintained, relatively safer"
+    },
+    {
+      "id": "R009",
+      "name": "Dwaraka Nagar Road",
+      "area": "Dwaraka Nagar",
+      "coordinates": [
+        [17.7280, 83.3100],
+        [17.7290, 83.3120],
+        [17.7300, 83.3140]
+      ],
+      "speed_limit": 40,
+      "road_type": "commercial",
+      "known_issues": ["parking chaos", "pedestrian accidents"],
+      "base_risk": 50,
+      "peak_hours": ["10:00-13:00", "17:00-20:00"],
+      "description": "Commercial area with heavy pedestrian activity"
+    },
+    {
+      "id": "R010",
+      "name": "Siripuram Junction",
+      "area": "Siripuram",
+      "coordinates": [
+        [17.7230, 83.3200],
+        [17.7240, 83.3215],
+        [17.7250, 83.3230]
+      ],
+      "speed_limit": 30,
+      "road_type": "junction",
+      "known_issues": ["signal jumping", "auto congestion"],
+      "base_risk": 60,
+      "peak_hours": ["08:00-10:00", "17:00-19:30"],
+      "description": "City centre junction with moderate accident risk"
+    }
+  ],
+  "locations": [
+    {"name": "Gajuwaka", "lat": 17.6801, "lng": 83.2100},
+    {"name": "Steel Plant", "lat": 17.6900, "lng": 83.2200},
+    {"name": "NAD Junction", "lat": 17.7200, "lng": 83.2800},
+    {"name": "MVP Colony", "lat": 17.7350, "lng": 83.2950},
+    {"name": "Siripuram", "lat": 17.7230, "lng": 83.3200},
+    {"name": "Dwaraka Nagar", "lat": 17.7280, "lng": 83.3100},
+    {"name": "RK Beach", "lat": 17.7231, "lng": 83.3012},
+    {"name": "Beach Road", "lat": 17.7150, "lng": 83.3078},
+    {"name": "Kommadi", "lat": 17.7800, "lng": 83.3200},
+    {"name": "Hanumanthawaka", "lat": 17.7102, "lng": 83.2156},
+    {"name": "NH16 Bypass", "lat": 17.6750, "lng": 83.2100}
+  ]
+}

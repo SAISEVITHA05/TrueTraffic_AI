@@ -1,0 +1,12 @@
+{
+  "events": [
+    {
+      "road": "MVP Colony Main Road",
+      "type": "VIP Movement",
+      "start_time": "10:00",
+      "end_time": "12:00",
+      "severity": "Full Restriction",
+      "description": ""
+    }
+  ]
+}

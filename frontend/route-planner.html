@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Route Planner — TrueTraffic AI</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" 
+    href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
+  <script 
+    src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js">
+  </script>
+  <style>
+    .page-grid {
+      display: grid;
+      grid-template-columns: 380px 1fr;
+      gap: 1.5rem;
+      max-width: 1200px;
+      margin: 2rem auto;
+      padding: 0 1.5rem;
+    }
+    .map-container { height: 520px; }
+    #map { height: 100%; border-radius: 12px; }
+    .route-cards { grid-template-columns: 1fr; }
+    .selected-route {
+      border-color: var(--primary) !important;
+      box-shadow: 0 0 0 2px var(--primary);
+    }
+    @media(max-width:900px) {
+      .page-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Navbar -->
+  <nav class="navbar">
+    <a href="index.html" class="navbar-brand">
+      <span class="logo">🚦</span>
+      <div>
+        <span class="brand-name">TrueTraffic AI</span>
+        <span class="brand-sub">Visakhapatnam Road Safety</span>
+      </div>
+    </a>
+    <ul class="nav-links">
+      <li><a href="index.html">Home</a></li>
+      <li><a href="route-planner.html" class="active">Route Planner</a></li>
+      <li><a href="dashboard.html">Dashboard</a></li>
+      <li><a href="admin.html">Admin</a></li>
+    </ul>
+  </nav>
+
+  <div class="page-grid">
+
+    <!-- Left Panel -->
+    <div>
+      <!-- Search Form -->
+      <div class="card" style="margin-bottom:1rem">
+        <p class="card-title">Plan Your Route</p>
+
+        <div class="form-group">
+          <label class="form-label">📍 From</label>
+          <select class="form-control" id="origin">
+            <option value="">Select starting point...</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">🏁 To</label>
+          <select class="form-control" id="destination">
+            <option value="">Select destination...</option>
+          </select>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">🕐 Time</label>
+            <input type="time" class="form-control" 
+              id="travelTime" value="08:00">
+          </div>
+          <div class="form-group">
+            <label class="form-label">🌤️ Weather</label>
+            <select class="form-control" id="weather">
+              <option value="Clear">☀️ Clear</option>
+              <option value="Rainy">🌧️ Rainy</option>
+              <option value="Foggy">🌫️ Foggy</option>
+              <option value="Windy">💨 Windy</option>
+            </select>
+          </div>
+        </div>
+
+        <button class="btn btn-primary" 
+          style="width:100%" onclick="findRoutes()">
+          🔍 Find Safest Route
+        </button>
+      </div>
+
+      <!-- Route Results -->
+      <div id="routeResults" style="display:none">
+
+        <!-- 3 Route Options -->
+        <div class="route-cards" id="routeCards"></div>
+
+        <!-- AI Explanation -->
+        <div class="ai-box" id="aiBox">
+          <div class="ai-header">
+            🤖 Gemini AI says
+          </div>
+          <div class="ai-text" id="aiText">
+            <span class="spinner"></span> Analyzing route...
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Special Events Warning -->
+      <div id="eventsWarning" 
+        style="display:none;margin-top:1rem">
+      </div>
+
+    </div>
+
+    <!-- Right Panel: Map -->
+    <div>
+      <div class="card" style="margin-bottom:1rem;
+        display:flex;justify-content:space-between;
+        align-items:center">
+        <span style="font-weight:600">
+          🗺️ Visakhapatnam Live Risk Map
+        </span>
+        <div style="display:flex;gap:0.5rem;
+          font-size:0.75rem;align-items:center">
+          <span style="color:var(--safe)">● Safe</span>
+          <span style="color:var(--warning)">● Medium</span>
+          <span style="color:var(--primary)">● High Risk</span>
+        </div>
+      </div>
+      <div class="map-container">
+        <div id="map"></div>
+      </div>
+
+      <!-- Road Risk List -->
+      <div class="card" style="margin-top:1rem">
+        <p class="card-title">Current Road Risk Levels</p>
+        <div class="road-list" id="roadRiskList">
+          <div class="loading">
+            <span class="spinner"></span> Loading...
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Footer -->
+  <footer class="footer">
+    🚦 TrueTraffic AI — Visakhapatnam |
+    Powered by Gemini AI + NVIDIA RAPIDS + BigQuery
+  </footer>
+
+  <script>
+    const API = 'http://127.0.0.1:5000';
+    let map, roadData, currentRouteLayer = null;
+    let allMarkers = [];
+
+    // Days array
+    const days = ['Sunday','Monday','Tuesday',
+      'Wednesday','Thursday','Friday','Saturday'];
+
+    // ── Init Map ─────────────────────────────────
+    function initMap() {
+      map = L.map('map').setView([17.7231, 83.2185], 13);
+      L.tileLayer(
+        'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+        { attribution: '© OpenStreetMap' }
+      ).addTo(map);
+    }
+
+    // ── Load Road Data ───────────────────────────
+    async function loadRoads() {
+      try {
+        const now = new Date();
+        const hour = now.getHours();
+        const day = days[now.getDay()];
+
+        const res = await fetch(
+          `${API}/api/risk?hour=${hour}&weather=Clear&day=${day}`
+        );
+        const data = await res.json();
+        roadData = data.roads;
+
+        drawRoadsOnMap(data.roads);
+        populateRoadList(data.roads);
+        populateLocations();
+
+      } catch(e) {
+        console.log('Road load error:', e);
+        populateLocations();
+      }
+    }
+
+    // ── Draw Roads On Map ────────────────────────
+    function drawRoadsOnMap(roads) {
+      allMarkers.forEach(m => map.removeLayer(m));
+      allMarkers = [];
+
+      roads.forEach(road => {
+        const color = getRiskColor(road.risk_score);
+
+        if (road.coordinates && road.coordinates.length > 1) {
+          const line = L.polyline(road.coordinates, {
+            color: color,
+            weight: 5,
+            opacity: 0.8
+          }).addTo(map);
+
+          line.bindPopup(`
+            <b>${road.name}</b><br>
+            Risk: ${road.risk_score}/100
+            <span style="color:${color}">
+              ● ${road.risk_level}
+            </span><br>
+            <small>${road.known_issues ?
+              road.known_issues.join(', ') : ''}</small>
+          `);
+          allMarkers.push(line);
+        }
+
+        // Add marker at first coordinate
+        if (road.coordinates && road.coordinates.length > 0) {
+          const icon = L.divIcon({
+            className: '',
+            html: `<div style="
+              background:${color};
+              width:12px;height:12px;
+              border-radius:50%;
+              border:2px solid white;
+              box-shadow:0 0 6px ${color}
+            "></div>`,
+            iconSize: [12, 12]
+          });
+
+          const marker = L.marker(
+            road.coordinates[0], { icon }
+          ).addTo(map);
+
+          marker.bindPopup(`
+            <b>${road.name}</b><br>
+            <b style="color:${color}">
+              ${road.risk_level} RISK
+            </b> (${road.risk_score}/100)<br>
+            <small>
+              Speed limit: ${road.speed_limit} km/h
+            </small>
+          `);
+          allMarkers.push(marker);
+        }
+      });
+    }
+
+    // ── Populate Locations ───────────────────────
+    function populateLocations() {
+      fetch(`${API}/api/roads`)
+        .then(r => r.json())
+        .then(data => {
+          const locs = data.locations || [];
+          const origin = document.getElementById('origin');
+          const dest = document.getElementById('destination');
+
+          locs.forEach(loc => {
+            origin.innerHTML +=
+              `<option value="${loc.name}">${loc.name}</option>`;
+            dest.innerHTML +=
+              `<option value="${loc.name}">${loc.name}</option>`;
+          });
+        })
+        .catch(() => {
+          // Fallback locations
+          const locs = [
+            'Gajuwaka', 'RK Beach', 'MVP Colony',
+            'NAD Junction', 'Siripuram',
+            'Dwaraka Nagar', 'Kommadi',
+            'Hanumanthawaka', 'Steel Plant', 'NH16 Bypass'
+          ];
+          const origin = document.getElementById('origin');
+          const dest = document.getElementById('destination');
+          locs.forEach(l => {
+            origin.innerHTML +=
+              `<option value="${l}">${l}</option>`;
+            dest.innerHTML +=
+              `<option value="${l}">${l}</option>`;
+          });
+        });
+    }
+
+    // ── Find Routes ──────────────────────────────
+    async function findRoutes() {
+      const origin =
+        document.getElementById('origin').value;
+      const destination =
+        document.getElementById('destination').value;
+      const timeVal =
+        document.getElementById('travelTime').value;
+      const weather =
+        document.getElementById('weather').value;
+
+      if (!origin || !destination) {
+        alert('Please select both origin and destination!');
+        return;
+      }
+      if (origin === destination) {
+        alert('Origin and destination cannot be the same!');
+        return;
+      }
+
+      const hour = parseInt(timeVal.split(':')[0]);
+      const day = days[new Date().getDay()];
+
+      // Show results panel
+      document.getElementById('routeResults')
+        .style.display = 'block';
+      document.getElementById('routeCards').innerHTML =
+        '<div class="loading"><span class="spinner"></span> Calculating routes...</div>';
+      document.getElementById('aiText').innerHTML =
+        '<span class="spinner"></span> Gemini is analyzing...';
+
+      try {
+        const res = await fetch(`${API}/api/routes`, {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({
+            origin, destination, hour, weather, day
+          })
+        });
+
+        const data = await res.json();
+        displayRoutes(data);
+        checkSpecialEvents();
+
+      } catch(e) {
+        document.getElementById('routeCards').innerHTML =
+          `<div class="alert alert-danger">
+            ❌ Could not connect to backend.
+            Make sure Flask is running!
+          </div>`;
+      }
+    }
+
+    // ── Display Routes ───────────────────────────
+    function displayRoutes(data) {
+      const { routes, ai_explanation } = data;
+      const cards = document.getElementById('routeCards');
+
+      cards.innerHTML = `
+        ${routeCard(routes.fastest, 'fastest', '🚀')}
+        ${routeCard(routes.safest, 'safest', '🛡️')}
+        ${routeCard(routes.recommended, 'recommended', '⭐')}
+      `;
+
+      // Highlight recommended on map
+      highlightRoute(routes.recommended, '#E63946');
+
+      // Show AI explanation
+      document.getElementById('aiText').textContent =
+        ai_explanation || 'Take the recommended route for the best balance of speed and safety.';
+    }
+
+    function routeCard(route, type, icon) {
+      const isRec = type === 'recommended';
+      return `
+        <div class="route-card ${type}"
+          onclick="highlightRoute(${JSON.stringify(route)},
+            '${getRouteColor(type)}')"
+          style="margin-bottom:0.8rem;cursor:pointer">
+          ${isRec ?
+            '<div class="recommended-badge">⭐ BEST</div>' : ''}
+          <div class="route-type">${icon} ${route.name}</div>
+          <div style="display:flex;align-items:baseline;
+            gap:0.3rem">
+            <div class="route-time">${route.time}</div>
+            <div class="route-mins">mins</div>
+          </div>
+          <div class="route-risk">
+            Risk: <b>${route.risk_score}/100</b> •
+            ${route.distance} km
+          </div>
+          <div style="margin-top:0.5rem">
+            <span class="risk-badge risk-${route.risk_level}">
+              ${route.risk_level}
+            </span>
+          </div>
+          <div style="font-size:0.75rem;
+            color:var(--text-muted);margin-top:0.5rem">
+            via ${route.roads.map(r=>r.name).join(' → ')}
+          </div>
+        </div>
+      `;
+    }
+
+    // ── Highlight Route On Map ───────────────────
+    function highlightRoute(route, color) {
+      if (currentRouteLayer) {
+        map.removeLayer(currentRouteLayer);
+      }
+
+      if (route.roads && route.roads.length > 0) {
+        const allCoords = [];
+        route.roads.forEach(road => {
+          if (road.coords) {
+            road.coords.forEach(c => allCoords.push(c));
+          }
+        });
+
+        if (allCoords.length > 0) {
+          currentRouteLayer = L.polyline(allCoords, {
+            color: color,
+            weight: 8,
+            opacity: 0.9,
+            dashArray: type === 'fastest' ? '10,5' : null
+          }).addTo(map);
+
+          map.fitBounds(currentRouteLayer.getBounds(),
+            { padding: [40, 40] });
+        }
+      }
+    }
+
+    // ── Populate Road Risk List ──────────────────
+    function populateRoadList(roads) {
+      const sorted = [...roads]
+        .sort((a, b) => b.risk_score - a.risk_score);
+      const list = document.getElementById('roadRiskList');
+
+      list.innerHTML = sorted.map(road => `
+        <div class="road-item">
+          <div style="flex:1">
+            <div style="font-weight:600;font-size:0.9rem">
+              ${road.name}
+            </div>
+            <div class="road-bar">
+              <div class="road-bar-fill" style="
+                width:${road.risk_score}%;
+                background:${getRiskColor(road.risk_score)}
+              "></div>
+            </div>
+          </div>
+          <div style="margin-left:1rem">
+            <span class="risk-badge risk-${road.risk_level}">
+              ${road.risk_score}
+            </span>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    // ── Check Special Events ─────────────────────
+    async function checkSpecialEvents() {
+      try {
+        const res = await fetch(`${API}/api/events`);
+        const data = await res.json();
+        const events = data.events || [];
+        const div =
+          document.getElementById('eventsWarning');
+
+        if (events.length > 0) {
+          div.style.display = 'block';
+          div.innerHTML = events.map(e => `
+            <div class="alert alert-warning">
+              🔵 <b>${e.road}</b> —
+              ${e.type} (${e.start_time}–${e.end_time})
+              <br><small>Consider alternate routes</small>
+            </div>
+          `).join('');
+        } else {
+          div.style.display = 'none';
+        }
+      } catch(e) {}
+    }
+
+    // ── Helpers ──────────────────────────────────
+    function getRiskColor(score) {
+      if (score >= 75) return '#E63946';
+      if (score >= 55) return '#F4A261';
+      if (score >= 35) return '#F4A261';
+      return '#2DC653';
+    }
+
+    function getRouteColor(type) {
+      if (type === 'fastest') return '#F4A261';
+      if (type === 'safest') return '#2DC653';
+      return '#E63946';
+    }
+
+    // ── Init ─────────────────────────────────────
+    initMap();
+    loadRoads();
+    checkSpecialEvents();
+  </script>
+
+</body>
+</html>

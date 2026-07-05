@@ -1,0 +1,9 @@
+flask
+flask-cors
+google-generativeai
+google-cloud-bigquery
+pandas
+numpy
+scikit-learn
+python-dotenv
+db-dtypes

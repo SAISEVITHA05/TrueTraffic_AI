@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TrueTraffic AI — Visakhapatnam</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <!-- Navbar -->
+  <nav class="navbar">
+    <a href="index.html" class="navbar-brand">
+      <span class="logo">🚦</span>
+      <div>
+        <span class="brand-name">TrueTraffic AI</span>
+        <span class="brand-sub">Visakhapatnam Road Safety</span>
+      </div>
+    </a>
+    <ul class="nav-links">
+      <li><a href="index.html" class="active">Home</a></li>
+      <li><a href="route-planner.html">Route Planner</a></li>
+      <li><a href="dashboard.html">Dashboard</a></li>
+      <li><a href="admin.html">Admin</a></li>
+    </ul>
+  </nav>
+
+  <!-- Hero -->
+  <section class="hero">
+    <div class="hero-badge">🇮🇳 Built for Visakhapatnam</div>
+    <h1>Drive <span>Smarter</span>,<br>Arrive Safer</h1>
+    <p>
+      AI-powered road safety intelligence for Vizag commuters.
+      Get real-time risk scores, find the safest route, and
+      make smarter decisions before you drive.
+    </p>
+    <div class="btn-group">
+      <a href="route-planner.html" class="btn btn-primary">
+        🗺️ Plan My Route
+      </a>
+      <a href="dashboard.html" class="btn btn-outline">
+        📊 View City Dashboard
+      </a>
+    </div>
+  </section>
+
+  <!-- Live Stats -->
+  <div class="stats-bar" id="statsBar">
+    <div class="stat-card">
+      <div class="stat-icon">⚠️</div>
+      <div class="stat-value" id="statDanger">--</div>
+      <div class="stat-label">High Risk Zones</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon">🛣️</div>
+      <div class="stat-value" id="statRoads">10</div>
+      <div class="stat-label">Roads Monitored</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon">🕐</div>
+      <div class="stat-value" id="statPeak">--</div>
+      <div class="stat-label">Peak Risk Hour</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon">🚗</div>
+      <div class="stat-value" id="statCause">--</div>
+      <div class="stat-label">Top Accident Cause</div>
+    </div>
+  </div>
+
+  <!-- How It Works -->
+  <div class="section">
+    <h2 class="section-title">How TrueTraffic AI Works</h2>
+    <div class="dashboard-grid">
+      <div class="card">
+        <div style="font-size:2rem;margin-bottom:0.8rem">📍</div>
+        <h3 style="margin-bottom:0.5rem">Enter Your Route</h3>
+        <p style="color:var(--text-muted);font-size:0.9rem;line-height:1.6">
+          Tell us where you're going and when.
+          We analyse every road on your route.
+        </p>
+      </div>
+      <div class="card">
+        <div style="font-size:2rem;margin-bottom:0.8rem">⚡</div>
+        <h3 style="margin-bottom:0.5rem">AI Calculates Risk</h3>
+        <p style="color:var(--text-muted);font-size:0.9rem;line-height:1.6">
+          NVIDIA RAPIDS processes 50,000 accident
+          records in 1.6 seconds to score your route.
+        </p>
+      </div>
+      <div class="card">
+        <div style="font-size:2rem;margin-bottom:0.8rem">🛡️</div>
+        <h3 style="margin-bottom:0.5rem">Get Smart Recommendation</h3>
+        <p style="color:var(--text-muted);font-size:0.9rem;line-height:1.6">
+          Gemini AI explains which route gives you
+          the best balance of speed and safety.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Dangerous Roads Today -->
+  <div class="section">
+    <h2 class="section-title">⚠️ Most Dangerous Roads Right Now</h2>
+    <div class="card">
+      <div class="road-list" id="dangerList">
+        <div class="loading">
+          <span class="spinner"></span> Loading road data...
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer class="footer">
+    🚦 TrueTraffic AI — Visakhapatnam |
+    Powered by Gemini AI + NVIDIA RAPIDS + BigQuery |
+    Built for APAC GenAI Hackathon 2026
+  </footer>
+
+  <script>
+    const API = 'http://127.0.0.1:5000';
+
+    // Get current hour and day
+    const now = new Date();
+    const hour = now.getHours();
+    const days = ['Sunday','Monday','Tuesday',
+                  'Wednesday','Thursday','Friday','Saturday'];
+    const day = days[now.getDay()];
+
+    // Load stats
+    async function loadStats() {
+      try {
+        const res = await fetch(`${API}/api/stats`);
+        const data = await res.json();
+
+        document.getElementById('statPeak').textContent =
+          `${data.peak_hour}:00`;
+        document.getElementById('statCause').textContent =
+          data.top_cause.split(' ')[0];
+      } catch(e) {
+        console.log('Stats error:', e);
+      }
+    }
+
+    // Load dangerous roads
+    async function loadRoads() {
+      try {
+        const res = await fetch(
+          `${API}/api/risk?hour=${hour}&weather=Clear&day=${day}`
+        );
+        const data = await res.json();
+
+        // Sort by risk, show top 5
+        const roads = data.roads
+          .sort((a, b) => b.risk_score - a.risk_score)
+          .slice(0, 5);
+
+        // Count high risk
+        const highRisk = data.roads.filter(
+          r => r.risk_score >= 55
+        ).length;
+        document.getElementById('statDanger').textContent =
+          highRisk;
+
+        const list = document.getElementById('dangerList');
+        list.innerHTML = roads.map(road => `
+          <div class="road-item">
+            <div style="flex:1">
+              <div style="font-weight:600">${road.name}</div>
+              <div style="font-size:0.75rem;color:var(--text-muted)">
+                ${road.area} •
+                ${road.known_issues.slice(0,2).join(', ')}
+              </div>
+              <div class="road-bar">
+                <div class="road-bar-fill" style="
+                  width:${road.risk_score}%;
+                  background:${getRiskColor(road.risk_score)}
+                "></div>
+              </div>
+            </div>
+            <div style="margin-left:1rem;text-align:right">
+              <span class="risk-badge risk-${road.risk_level}">
+                ${road.risk_level}
+              </span>
+              <div style="font-size:0.8rem;color:var(--text-muted);
+                          margin-top:0.3rem">
+                ${road.risk_score}/100
+              </div>
+            </div>
+          </div>
+        `).join('');
+
+      } catch(e) {
+        document.getElementById('dangerList').innerHTML = `
+          <div class="alert alert-warning">
+            ⚠️ Could not load road data.
+            Make sure backend is running.
+          </div>`;
+      }
+    }
+
+    function getRiskColor(score) {
+      if (score >= 75) return '#E63946';
+      if (score >= 55) return '#F4A261';
+      if (score >= 35) return '#F4A261';
+      return '#2DC653';
+    }
+
+    loadStats();
+    loadRoads();
+  </script>
+
+</body>
+</html>

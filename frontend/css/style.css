@@ -1,0 +1,576 @@
+/* ── Root Variables ─────────────────────────── */
+:root {
+  --primary: #E63946;
+  --primary-dark: #c1121f;
+  --safe: #2DC653;
+  --warning: #F4A261;
+  --critical: #E63946;
+  --bg: #0D1117;
+  --bg-card: #161B22;
+  --bg-card2: #1F2937;
+  --text: #FFFFFF;
+  --text-muted: #8B949E;
+  --border: #30363D;
+  --glow: rgba(230, 57, 70, 0.3);
+}
+
+/* ── Reset ──────────────────────────────────── */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Segoe UI', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+}
+
+/* ── Navbar ─────────────────────────────────── */
+.navbar {
+  background: var(--bg-card);
+  border-bottom: 1px solid var(--border);
+  padding: 0 2rem;
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+}
+
+.navbar-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-decoration: none;
+}
+
+.navbar-brand .logo {
+  font-size: 1.5rem;
+}
+
+.navbar-brand .brand-name {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--primary);
+}
+
+.navbar-brand .brand-sub {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  display: block;
+  line-height: 1;
+}
+
+.nav-links {
+  display: flex;
+  gap: 0.5rem;
+  list-style: none;
+}
+
+.nav-links a {
+  color: var(--text-muted);
+  text-decoration: none;
+  padding: 0.4rem 1rem;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  transition: all 0.2s;
+}
+
+.nav-links a:hover,
+.nav-links a.active {
+  color: var(--text);
+  background: var(--bg-card2);
+}
+
+/* ── Hero Section ───────────────────────────── */
+.hero {
+  text-align: center;
+  padding: 5rem 2rem 3rem;
+  background: radial-gradient(
+    ellipse at top,
+    rgba(230, 57, 70, 0.15) 0%,
+    transparent 70%
+  );
+}
+
+.hero-badge {
+  display: inline-block;
+  background: rgba(230, 57, 70, 0.15);
+  border: 1px solid rgba(230, 57, 70, 0.3);
+  color: var(--primary);
+  padding: 0.3rem 1rem;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  margin-bottom: 1.5rem;
+  font-weight: 600;
+}
+
+.hero h1 {
+  font-size: 3rem;
+  font-weight: 800;
+  line-height: 1.2;
+  margin-bottom: 1rem;
+}
+
+.hero h1 span {
+  color: var(--primary);
+}
+
+.hero p {
+  font-size: 1.1rem;
+  color: var(--text-muted);
+  max-width: 600px;
+  margin: 0 auto 2rem;
+  line-height: 1.6;
+}
+
+/* ── Buttons ────────────────────────────────── */
+.btn {
+  padding: 0.7rem 1.5rem;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  transition: all 0.2s;
+  text-decoration: none;
+  display: inline-block;
+}
+
+.btn-primary {
+  background: var(--primary);
+  color: white;
+}
+
+.btn-primary:hover {
+  background: var(--primary-dark);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 20px var(--glow);
+}
+
+.btn-outline {
+  background: transparent;
+  color: var(--text);
+  border: 1px solid var(--border);
+}
+
+.btn-outline:hover {
+  background: var(--bg-card2);
+  border-color: var(--text-muted);
+}
+
+.btn-group {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+/* ── Stats Bar ──────────────────────────────── */
+.stats-bar {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 1rem;
+  max-width: 900px;
+  margin: 3rem auto;
+  padding: 0 2rem;
+}
+
+.stat-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 1.2rem;
+  text-align: center;
+  transition: all 0.2s;
+}
+
+.stat-card:hover {
+  border-color: var(--primary);
+  transform: translateY(-2px);
+}
+
+.stat-icon {
+  font-size: 1.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.stat-value {
+  font-size: 1.8rem;
+  font-weight: 800;
+  color: var(--primary);
+}
+
+.stat-label {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin-top: 0.2rem;
+}
+
+/* ── Cards ──────────────────────────────────── */
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 1.5rem;
+}
+
+.card-title {
+  font-size: 1rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-size: 0.8rem;
+}
+
+/* ── Risk Badge ─────────────────────────────── */
+.risk-badge {
+  display: inline-block;
+  padding: 0.2rem 0.7rem;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.risk-LOW {
+  background: rgba(45, 198, 83, 0.15);
+  color: var(--safe);
+  border: 1px solid rgba(45, 198, 83, 0.3);
+}
+
+.risk-MEDIUM {
+  background: rgba(244, 162, 97, 0.15);
+  color: var(--warning);
+  border: 1px solid rgba(244, 162, 97, 0.3);
+}
+
+.risk-HIGH {
+  background: rgba(230, 57, 70, 0.15);
+  color: var(--primary);
+  border: 1px solid rgba(230, 57, 70, 0.3);
+}
+
+.risk-CRITICAL {
+  background: rgba(230, 57, 70, 0.3);
+  color: #ff6b6b;
+  border: 1px solid rgba(230, 57, 70, 0.5);
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+/* ── Route Cards ────────────────────────────── */
+.route-cards {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
+  margin: 1.5rem 0;
+}
+
+.route-card {
+  background: var(--bg-card);
+  border: 2px solid var(--border);
+  border-radius: 12px;
+  padding: 1.2rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  position: relative;
+}
+
+.route-card:hover {
+  transform: translateY(-2px);
+}
+
+.route-card.fastest {
+  border-top: 3px solid var(--warning);
+}
+
+.route-card.safest {
+  border-top: 3px solid var(--safe);
+}
+
+.route-card.recommended {
+  border-top: 3px solid var(--primary);
+  box-shadow: 0 0 20px var(--glow);
+}
+
+.route-card .route-type {
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin-bottom: 0.5rem;
+}
+
+.route-card.fastest .route-type { color: var(--warning); }
+.route-card.safest .route-type { color: var(--safe); }
+.route-card.recommended .route-type { color: var(--primary); }
+
+.route-card .route-time {
+  font-size: 2rem;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.route-card .route-mins {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.route-card .route-risk {
+  margin-top: 0.8rem;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.recommended-badge {
+  position: absolute;
+  top: -10px;
+  right: 10px;
+  background: var(--primary);
+  color: white;
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 0.2rem 0.5rem;
+  border-radius: 10px;
+}
+
+/* ── Map Container ──────────────────────────── */
+.map-container {
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  height: 450px;
+}
+
+#map {
+  height: 100%;
+  width: 100%;
+}
+
+/* ── AI Box ─────────────────────────────────── */
+.ai-box {
+  background: linear-gradient(
+    135deg,
+    rgba(230, 57, 70, 0.1),
+    rgba(22, 27, 34, 0.8)
+  );
+  border: 1px solid rgba(230, 57, 70, 0.3);
+  border-radius: 12px;
+  padding: 1.2rem 1.5rem;
+  margin-top: 1rem;
+}
+
+.ai-box .ai-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.7rem;
+  font-size: 0.8rem;
+  color: var(--primary);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.ai-box .ai-text {
+  color: var(--text);
+  line-height: 1.6;
+  font-size: 0.95rem;
+}
+
+/* ── Form Controls ──────────────────────────── */
+.form-group {
+  margin-bottom: 1rem;
+}
+
+.form-label {
+  display: block;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  margin-bottom: 0.4rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.form-control {
+  width: 100%;
+  background: var(--bg-card2);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 0.7rem 1rem;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  transition: all 0.2s;
+  appearance: none;
+}
+
+.form-control:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px var(--glow);
+}
+
+/* ── Form Row ───────────────────────────────── */
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+/* ── Section ────────────────────────────────── */
+.section {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 2rem;
+}
+
+.section-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin-bottom: 1.5rem;
+}
+
+/* ── Alert ──────────────────────────────────── */
+.alert {
+  padding: 0.8rem 1.2rem;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+  font-size: 0.9rem;
+}
+
+.alert-warning {
+  background: rgba(244, 162, 97, 0.15);
+  border: 1px solid rgba(244, 162, 97, 0.3);
+  color: var(--warning);
+}
+
+.alert-danger {
+  background: rgba(230, 57, 70, 0.15);
+  border: 1px solid rgba(230, 57, 70, 0.3);
+  color: var(--primary);
+}
+
+.alert-success {
+  background: rgba(45, 198, 83, 0.15);
+  border: 1px solid rgba(45, 198, 83, 0.3);
+  color: var(--safe);
+}
+
+/* ── Loading Spinner ────────────────────────── */
+.spinner {
+  width: 20px;
+  height: 20px;
+  border: 2px solid var(--border);
+  border-top-color: var(--primary);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  display: inline-block;
+  vertical-align: middle;
+  margin-right: 0.5rem;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  color: var(--text-muted);
+}
+
+/* ── Footer ─────────────────────────────────── */
+.footer {
+  text-align: center;
+  padding: 2rem;
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  border-top: 1px solid var(--border);
+  margin-top: 4rem;
+}
+
+/* ── Responsive ─────────────────────────────── */
+@media (max-width: 768px) {
+  .hero h1 { font-size: 2rem; }
+  .route-cards { grid-template-columns: 1fr; }
+  .form-row { grid-template-columns: 1fr; }
+  .nav-links { display: none; }
+}
+
+/* ── Dashboard Grid ─────────────────────────── */
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 1.5rem;
+  margin-top: 1.5rem;
+}
+
+/* ── Road Risk List ─────────────────────────── */
+.road-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+}
+
+.road-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.7rem 1rem;
+  background: var(--bg-card2);
+  border-radius: 8px;
+  font-size: 0.9rem;
+}
+
+.road-bar {
+  height: 4px;
+  border-radius: 2px;
+  margin-top: 0.3rem;
+  background: var(--border);
+  overflow: hidden;
+}
+
+.road-bar-fill {
+  height: 100%;
+  border-radius: 2px;
+  transition: width 1s ease;
+}
+
+/* ── Event Cards ────────────────────────────── */
+.event-card {
+  background: var(--bg-card2);
+  border-radius: 8px;
+  padding: 0.8rem 1rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+  border-left: 3px solid var(--primary);
+}
+
+.event-card .event-info {
+  font-size: 0.85rem;
+}
+
+.event-card .event-road {
+  font-weight: 600;
+}
+
+.event-card .event-time {
+  color: var(--text-muted);
+  font-size: 0.75rem;
+}

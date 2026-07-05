@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Panel — TrueTraffic AI</title>
+  <link rel="stylesheet" href="css/style.css">
+  <style>
+    .admin-grid {
+      display: grid;
+      grid-template-columns: 400px 1fr;
+      gap: 1.5rem;
+      max-width: 1100px;
+      margin: 2rem auto;
+      padding: 0 1.5rem;
+    }
+    .login-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.8);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+      backdrop-filter: blur(4px);
+    }
+    .login-box {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 2.5rem;
+      width: 360px;
+      text-align: center;
+    }
+    .login-box h2 {
+      margin-bottom: 0.5rem;
+    }
+    .login-box p {
+      color: var(--text-muted);
+      font-size: 0.9rem;
+      margin-bottom: 1.5rem;
+    }
+    @media(max-width:768px) {
+      .admin-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Login Overlay -->
+  <div class="login-overlay" id="loginOverlay">
+    <div class="login-box">
+      <div style="font-size:3rem;margin-bottom:1rem">🔐</div>
+      <h2>Admin Access</h2>
+      <p>Enter password to manage road events and overrides</p>
+      <div class="form-group">
+        <input type="password" class="form-control"
+          id="passwordInput"
+          placeholder="Enter admin password"
+          onkeypress="if(event.key==='Enter') login()">
+      </div>
+      <div id="loginError" style="display:none"
+        class="alert alert-danger">
+        ❌ Wrong password
+      </div>
+      <button class="btn btn-primary"
+        style="width:100%;margin-top:0.5rem"
+        onclick="login()">
+        🔓 Login
+      </button>
+      <p style="margin-top:1rem;font-size:0.75rem;
+        color:var(--text-muted)">
+        Demo password: admin123
+      </p>
+    </div>
+  </div>
+
+  <!-- Navbar -->
+  <nav class="navbar">
+    <a href="index.html" class="navbar-brand">
+      <span class="logo">🚦</span>
+      <div>
+        <span class="brand-name">TrueTraffic AI</span>
+        <span class="brand-sub">Visakhapatnam Road Safety</span>
+      </div>
+    </a>
+    <ul class="nav-links">
+      <li><a href="index.html">Home</a></li>
+      <li><a href="route-planner.html">Route Planner</a></li>
+      <li><a href="dashboard.html">Dashboard</a></li>
+      <li><a href="admin.html" class="active">Admin</a></li>
+    </ul>
+  </nav>
+
+  <div class="admin-grid">
+
+    <!-- Add Event Form -->
+    <div>
+      <div class="card">
+        <p class="card-title">🚨 Add Road Override</p>
+
+        <div class="form-group">
+          <label class="form-label">Road Name</label>
+          <select class="form-control" id="eventRoad">
+            <option value="">Select road...</option>
+            <option>Beach Road</option>
+            <option>Hanumanthawaka Junction</option>
+            <option>Gajuwaka Junction</option>
+            <option>NAD Junction</option>
+            <option>Steel Plant Road</option>
+            <option>MVP Colony Main Road</option>
+            <option>Kommadi Road</option>
+            <option>NH16 Bypass</option>
+            <option>Dwaraka Nagar Road</option>
+            <option>Siripuram Junction</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Event Type</label>
+          <select class="form-control" id="eventType">
+            <option value="VIP Movement">
+              👑 VIP Movement
+            </option>
+            <option value="Rally or Protest">
+              📣 Rally / Protest
+            </option>
+            <option value="Accident Clearance">
+              🚑 Accident Clearance
+            </option>
+            <option value="Road Work">
+              🚧 Road Work
+            </option>
+            <option value="Festival Procession">
+              🎉 Festival / Procession
+            </option>
+            <option value="Flood or Waterlogging">
+              🌊 Flood / Waterlogging
+            </option>
+          </select>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Start Time</label>
+            <input type="time" class="form-control"
+              id="startTime" value="10:00">
+          </div>
+          <div class="form-group">
+            <label class="form-label">End Time</label>
+            <input type="time" class="form-control"
+              id="endTime" value="12:00">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Restriction Level</label>
+          <select class="form-control" id="eventSeverity">
+            <option value="Full Restriction">
+              🔴 Full Restriction
+            </option>
+            <option value="Partial">
+              🟡 Partial — One Lane
+            </option>
+            <option value="Caution">
+              🟢 Caution Only
+            </option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">
+            Description (optional)
+          </label>
+          <input type="text" class="form-control"
+            id="eventDesc"
+            placeholder="e.g. CM convoy passing through">
+        </div>
+
+        <button class="btn btn-primary"
+          style="width:100%" onclick="addEvent()">
+          🚨 Apply Override
+        </button>
+
+        <div id="addResult"
+          style="margin-top:1rem;display:none">
+        </div>
+      </div>
+
+      <!-- Quick Actions -->
+      <div class="card" style="margin-top:1rem">
+        <p class="card-title">⚡ Quick Actions</p>
+        <button class="btn btn-outline"
+          style="width:100%;margin-bottom:0.5rem"
+          onclick="clearAllEvents()">
+          🗑️ Clear All Restrictions
+        </button>
+        <button class="btn btn-outline"
+          style="width:100%"
+          onclick="loadEvents()">
+          🔄 Refresh Events
+        </button>
+      </div>
+    </div>
+
+    <!-- Active Events -->
+    <div>
+      <div class="card">
+        <p class="card-title">
+          🔵 Active Road Restrictions
+        </p>
+        <div id="activeEvents">
+          <div class="loading">
+            <span class="spinner"></span>
+            Loading events...
+          </div>
+        </div>
+      </div>
+
+      <!-- Info Box -->
+      <div class="card" style="margin-top:1rem">
+        <p class="card-title">ℹ️ How Overrides Work</p>
+        <div style="font-size:0.9rem;
+          color:var(--text-muted);line-height:1.8">
+          <p>
+            🤖 <b style="color:var(--text)">
+              AI Prediction Layer
+            </b> — normally calculates risk
+            based on historical data + weather + time
+          </p>
+          <p style="margin-top:0.8rem">
+            👮 <b style="color:var(--text)">
+              Human Override Layer
+            </b> — when you add an event,
+            the AI prediction is paused for that road
+            and commuters see the restriction instead
+          </p>
+          <p style="margin-top:0.8rem">
+            ⏰ <b style="color:var(--text)">
+              Auto Resume
+            </b> — after end time,
+            normal AI prediction resumes automatically
+          </p>
+          <p style="margin-top:0.8rem;
+            padding:0.8rem;background:var(--bg-card2);
+            border-radius:8px;
+            border-left:3px solid var(--primary)">
+            This is <b style="color:var(--primary)">
+              Responsible AI
+            </b> — humans stay in control.
+            AI handles patterns, humans handle exceptions.
+          </p>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Footer -->
+  <footer class="footer">
+    🚦 TrueTraffic AI — Visakhapatnam |
+    Admin Panel
+  </footer>
+
+  <script>
+    const API = 'http://127.0.0.1:5000';
+    let isLoggedIn = false;
+
+    // ── Login ────────────────────────────────────
+    function login() {
+      const pwd =
+        document.getElementById('passwordInput').value;
+      if (pwd === 'admin123') {
+        document.getElementById('loginOverlay')
+          .style.display = 'none';
+        isLoggedIn = true;
+        loadEvents();
+      } else {
+        document.getElementById('loginError')
+          .style.display = 'block';
+      }
+    }
+
+    // ── Load Events ──────────────────────────────
+    async function loadEvents() {
+      try {
+        const res = await fetch(`${API}/api/events`);
+        const data = await res.json();
+        const events = data.events || [];
+        const div =
+          document.getElementById('activeEvents');
+
+        if (events.length === 0) {
+          div.innerHTML = `
+            <div style="text-align:center;
+              padding:2rem;color:var(--text-muted)">
+              ✅ No active restrictions.<br>
+              <small>All roads running normally.</small>
+            </div>`;
+          return;
+        }
+
+        div.innerHTML = events.map((e, i) => `
+          <div class="event-card">
+            <div class="event-info">
+              <div class="event-road">🔵 ${e.road}</div>
+              <div class="event-time">
+                ${e.type} •
+                ${e.start_time} – ${e.end_time} •
+                ${e.severity}
+              </div>
+              ${e.description ?
+                `<div style="font-size:0.75rem;
+                  color:var(--text-muted);margin-top:0.2rem">
+                  ${e.description}
+                </div>` : ''}
+            </div>
+            <button class="btn btn-outline"
+              style="font-size:0.75rem;padding:0.3rem 0.7rem"
+              onclick="removeEvent(${i})">
+              Remove
+            </button>
+          </div>
+        `).join('');
+
+      } catch(e) {
+        document.getElementById('activeEvents')
+          .innerHTML = `
+          <div class="alert alert-warning">
+            ⚠️ Could not load events.
+            Backend may not be running.
+          </div>`;
+      }
+    }
+
+    // ── Add Event ────────────────────────────────
+    async function addEvent() {
+      const road =
+        document.getElementById('eventRoad').value;
+      const type =
+        document.getElementById('eventType').value;
+      const startTime =
+        document.getElementById('startTime').value;
+      const endTime =
+        document.getElementById('endTime').value;
+      const severity =
+        document.getElementById('eventSeverity').value;
+      const desc =
+        document.getElementById('eventDesc').value;
+
+      if (!road) {
+        alert('Please select a road!');
+        return;
+      }
+
+      const resultDiv =
+        document.getElementById('addResult');
+      resultDiv.style.display = 'block';
+      resultDiv.innerHTML =
+        '<div class="loading"><span class="spinner"></span> Applying override...</div>';
+
+      try {
+        const res = await fetch(`${API}/api/events`, {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({
+            password: 'admin123',
+            road, type,
+            start_time: startTime,
+            end_time: endTime,
+            severity,
+            description: desc
+          })
+        });
+
+        const data = await res.json();
+
+        if (data.success) {
+          resultDiv.innerHTML = `
+            <div class="alert alert-success">
+              ✅ Override applied for ${road}!
+              Commuters will now see this restriction.
+            </div>`;
+          loadEvents();
+        }
+
+      } catch(e) {
+        resultDiv.innerHTML = `
+          <div class="alert alert-danger">
+            ❌ Could not apply override.
+            Check backend connection.
+          </div>`;
+      }
+    }
+
+    // ── Clear All Events ─────────────────────────
+    async function clearAllEvents() {
+      if (!confirm(
+        'Clear all active restrictions?'
+      )) return;
+
+      try {
+        await fetch(`${API}/api/events/clear`, {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({password: 'admin123'})
+        });
+        loadEvents();
+      } catch(e) {
+        alert('Could not clear events.');
+      }
+    }
+
+    // ── Remove Single Event ──────────────────────
+    async function removeEvent(index) {
+      // For demo — just clear all
+      // In production would delete by index
+      if (!confirm('Remove this restriction?')) return;
+      clearAllEvents();
+    }
+  </script>
+
+</body>
+</html>
