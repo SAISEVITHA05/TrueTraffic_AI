@@ -1,6 +1,19 @@
 services:
   - type: web
     name: truetraffic-ai
-    env: python
+    runtime: python
+    plan: free
     buildCommand: pip install -r requirements.txt
-    startCommand: python -m backend.app
+    startCommand: gunicorn backend.app:app --bind 0.0.0.0:$PORT --workers 2 --timeout 60
+    healthCheckPath: /api/health
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.9
+      - key: ADMIN_PASSWORD
+        sync: false
+      - key: SECRET_KEY
+        generateValue: true
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: GROQ_API_KEY
+        sync: false

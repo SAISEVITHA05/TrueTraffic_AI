@@ -1,81 +1,54 @@
-from google.cloud import bigquery
-from google.oauth2 import service_account
+"""Optional BigQuery integration (set USE_BIGQUERY=true and install requirements-bigquery.txt).
+Falls back to the local CSV so the app works without any cloud credentials."""
+import logging
 import os
+
 import pandas as pd
-from dotenv import load_dotenv
 
-load_dotenv()
+from backend.paths import ACCIDENTS_CSV
 
-def get_client():
+log = logging.getLogger(__name__)
+
+
+def enabled() -> bool:
+    return os.getenv("USE_BIGQUERY", "false").lower() == "true"
+
+
+def _client():
+    from google.cloud import bigquery  # imported lazily: heavy, optional
+    return bigquery.Client(project=os.getenv("GOOGLE_CLOUD_PROJECT"))
+
+
+def upload_accident_data() -> bool:
     try:
-        project_id = os.getenv("GOOGLE_CLOUD_PROJECT")
-        client = bigquery.Client(project=project_id)
-        return client
-    except Exception as e:
-        print(f"BigQuery connection error: {e}")
-        return None
-
-def upload_accident_data():
-    try:
-        client = get_client()
-        if not client:
-            return False
-
-        project_id = os.getenv("GOOGLE_CLOUD_PROJECT")
-        dataset_id = "truetraffic_data"
-        table_id = f"{project_id}.{dataset_id}.accidents"
-
-        df = pd.read_csv("data/vizag_accidents.csv")
-
-        job_config = bigquery.LoadJobConfig(
-            write_disposition="WRITE_TRUNCATE",
-            autodetect=True
-        )
-
-        job = client.load_table_from_dataframe(
-            df, table_id, job_config=job_config
-        )
+        from google.cloud import bigquery
+        table = f"{os.getenv('GOOGLE_CLOUD_PROJECT')}.truetraffic_data.accidents"
+        df = pd.read_csv(ACCIDENTS_CSV)
+        job = _client().load_table_from_dataframe(
+            df, table, job_config=bigquery.LoadJobConfig(
+                write_disposition="WRITE_TRUNCATE", autodetect=True))
         job.result()
-
-        print(f"✅ Uploaded {len(df)} rows to BigQuery")
+        log.info("Uploaded %d rows to %s", len(df), table)
         return True
-
-    except Exception as e:
-        print(f"Upload error: {e}")
+    except Exception as exc:
+        log.error("BigQuery upload failed: %s", exc)
         return False
 
+
 def get_accident_stats():
-    try:
-        client = get_client()
-        if not client:
-            return get_local_stats()
-
-        project_id = os.getenv("GOOGLE_CLOUD_PROJECT")
-        query = f"""
-        SELECT 
-            road_name,
-            AVG(risk_score) as avg_risk,
-            COUNT(*) as total_accidents,
-            SUM(fatalities) as total_fatalities,
-            MAX(hour) as peak_hour
-        FROM `{project_id}.truetraffic_data.accidents`
-        GROUP BY road_name
-        ORDER BY avg_risk DESC
-        """
-
-        result = client.query(query).to_dataframe()
-        return result.to_dict(orient="records")
-
-    except Exception as e:
-        print(f"Query error: {e}, using local data")
-        return get_local_stats()
-
-def get_local_stats():
-    # Fallback to local CSV if BigQuery unavailable
-    df = pd.read_csv("data/vizag_accidents.csv")
-    stats = df.groupby("road_name").agg(
-        avg_risk=("risk_score", "mean"),
-        total_accidents=("accident_id", "count"),
-        total_fatalities=("fatalities", "sum")
-    ).reset_index()
-    return stats.to_dict(orient="records")
+    """Per-road aggregates; BigQuery when enabled, otherwise the CSV."""
+    if enabled():
+        try:
+            q = f"""
+                SELECT road_name, AVG(risk_score) AS avg_risk,
+                       COUNT(*) AS total_accidents, SUM(fatalities) AS total_fatalities
+                FROM `{os.getenv('GOOGLE_CLOUD_PROJECT')}.truetraffic_data.accidents`
+                GROUP BY road_name ORDER BY avg_risk DESC"""
+            return _client().query(q).to_dataframe().to_dict(orient="records")
+        except Exception as exc:
+            log.warning("BigQuery query failed (%s); using local CSV", exc)
+    df = pd.read_csv(ACCIDENTS_CSV)
+    return (df.groupby("road_name")
+              .agg(avg_risk=("risk_score", "mean"), total_accidents=("accident_id", "count"),
+                   total_fatalities=("fatalities", "sum"))
+              .reset_index().to_dict(orient="records"))

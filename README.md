@@ -1,125 +1,81 @@
 # 🚦 TrueTraffic AI
 
-**AI-powered road safety and route intelligence platform for Visakhapatnam.**
+**AI-assisted road-safety and route intelligence for Visakhapatnam.**
+Instead of one "fastest" answer, TrueTraffic AI gives three options - **Fastest, Safest and Recommended** - scored with a live risk model built from 50,000 historical accident records, and explains the trade-off in plain language.
 
-TrueTraffic AI helps commuters choose routes based on both speed *and* safety — not speed alone. It analyzes historical accident data, computes real-time risk scores for road segments, and uses Gemini AI to explain *why* a route is risky in plain language, alongside a human-in-the-loop admin layer for special events and VIP movements.
+Built for the APAC GenAI Hackathon 2026 (Urban Mobility track), then reworked into a deployable app.
 
-Built for the **APAC GenAI Hackathon 2026**, under the Urban Mobility and Transportation track of the Decision Intelligence Platform problem statement.
+## Features
 
----
+- **Real-road routing** - candidate routes follow actual streets (OSRM) from the exact start to the exact destination; each is scored against the live hotspot risk model, then Fastest / Safest / Recommended (60/40 safety/speed) are chosen. All three are drawn on the map. If OSRM is unreachable the app falls back to the old built-in road model (`backend/route_engine.py`).
+- **Live risk model** - base road risk + time of day, road-specific peak hours, weather, weekend, and admin events (`backend/risk_model.py`).
+- **AI explanations** - Gemini first, Groq second, and a rule-based fallback, so the app never breaks if an API key is missing or rate-limited.
+- **Accident dashboard** - hourly trend, weather, severity, most dangerous roads (cached pandas aggregation, optional BigQuery).
+- **Human-in-the-loop admin panel** - authenticated admins can fully close a road (routes avoid it) or raise its risk (VIP movement, road work, floods...).
 
-## 🧠 What it does
-
-- Recommends **three route options** — Fastest, Safest, and AI-Recommended — instead of one black-box answer
-- Computes **live risk scores** per road segment based on historical accident data, time of day, weather, and day of week
-- Uses **Gemini AI** to generate a plain-language explanation of why a route is safer or riskier
-- Shows a **live interactive risk map** of Visakhapatnam, color-coded by road risk level
-- Provides a **city dashboard** with accident trends, peak hours, dangerous roads, and severity breakdowns from 50,000+ historical records
-- Includes an **admin panel** for human-in-the-loop overrides — administrators can flag roads for VIP movements, road work, or events, temporarily overriding AI recommendations (Responsible AI: humans handle exceptions, AI handles patterns)
-
----
-
-## 🏗️ Architecture
+## Architecture
 
 ```
-Client (Route Planner / Dashboard / Admin Panel)
-        ↓
-Backend orchestration layer
-        ↓
-┌─────────────────────────────────────────────┐
-│  BigQuery          → accident history query  │
-│  Risk model         → live risk scoring       │
-│  Gemini AI          → natural-language        │
-│                        route explanations     │
-└─────────────────────────────────────────────┘
-        ↓
-Rendered result: risk map + 3 route options + AI explanation
+Browser (static HTML/JS, Leaflet, Chart.js)
+        │  same-origin /api/*
+Flask app (gunicorn)
+ ├─ risk_model.py    live risk scoring + event windows
+ ├─ route_engine.py  road graph + Dijkstra (3 cost functions)
+ ├─ ai_agent.py      Gemini → Groq → rule-based explanation
+ ├─ bigquery_client.py  optional (USE_BIGQUERY=true)
+ └─ data/            roads, accidents CSV, admin events
 ```
 
----
+Flask serves both the API and the frontend, so there is **one service to deploy** and no CORS or URL configuration.
 
-## 🛠️ Tech stack
+## Run locally
 
-| Layer | Technology |
-|---|---|
-| Risk scoring | Custom Python risk model (time-of-day, weather, day-of-week factors) |
-| Historical data | Google BigQuery (50,000+ Vizag accident records), CSV fallback |
-| AI reasoning | Gemini AI (`google-generativeai`) |
-| App / UI | Streamlit |
-| Maps | Folium + streamlit-folium |
-| Data processing | pandas |
-
----
-
-## 📁 Project structure
-
-```
-truetraffic_ai/
-├── backend/
-│   ├── streamlit_app.py      # Main app (UI + orchestration)
-│   ├── risk_model.py         # Risk scoring logic
-│   ├── route_engine.py       # Builds fastest/safest/recommended routes
-│   ├── gemini_agent.py       # Gemini AI explanation layer
-│   ├── bigquery_client.py    # BigQuery upload/query helpers
-│   ├── benchmark.py          # pandas vs RAPIDS cuDF benchmark
-│   └── generate_data.py      # Synthetic accident data generator
-├── data/
-│   ├── vizag_roads.json      # Road segments, coordinates, base risk
-│   ├── vizag_accidents.csv   # 50,000+ historical accident records
-│   └── special_events.json   # Active admin overrides/restrictions
-├── requirements.txt
-└── README.md
+```bash
+python -m venv .venv && source .venv/bin/activate   # Windows: .venv\Scripts\activate
+pip install -r requirements-dev.txt
+cp .env.example .env        # then edit: ADMIN_PASSWORD, and optionally GEMINI_API_KEY / GROQ_API_KEY
+python -m backend.app       # http://localhost:5000
+pytest -q                   # run the tests
 ```
 
----
+## Deploy (Render, free tier)
 
-## ⚙️ Setup
+1. Push this repo to GitHub.
+2. Render → **New → Blueprint** → select the repo (it reads `render.yaml`).
+3. When prompted, set `ADMIN_PASSWORD` and (optionally) `GEMINI_API_KEY` / `GROQ_API_KEY`.
+4. Deploy. Health check: `/api/health`.
 
-1. **Clone the repo and install dependencies:**
-   ```bash
-   pip install -r requirements.txt
-   ```
+Any platform that runs `gunicorn backend.app:app` works (Railway, Fly.io, Heroku via `Procfile`).
 
-2. **Set environment variables** — create a `.env` file in the project root:
-   ```
-   GEMINI_API_KEY=your_gemini_api_key
-   GOOGLE_CLOUD_PROJECT=your_gcp_project_id   # optional, for BigQuery
-   ```
+> **Note:** admin-created events are stored in `data/special_events.json`; on free hosts with an ephemeral disk they reset on redeploy. Fine for a demo; use a database for production.
 
-3. **Run locally:**
-   ```bash
-   cd backend
-   python -m streamlit run streamlit_app.py
-   ```
-   The app opens at `http://localhost:8501`.
+## API
 
----
+| Method | Path | Notes |
+|---|---|---|
+| GET | `/api/health` | liveness |
+| GET | `/api/roads` | road network + locations |
+| GET | `/api/risk?hour=&weather=&day=` | live risk per road |
+| POST | `/api/routes` | `{origin, destination, hour, weather, day}` → 3 routes + AI text |
+| GET | `/api/stats` | dashboard statistics |
+| GET | `/api/events` | active admin events |
+| POST | `/api/admin/login` | `{password}` → bearer token |
+| POST/DELETE | `/api/events`, `/api/events/<i>`, `/api/events/clear` | admin only |
 
-## 🚀 Deployment
+## Limitations (honest notes)
 
-Deployed via [Streamlit Community Cloud](https://share.streamlit.io):
+- The road network is a small hand-curated set of 10 roads, so routes are a model, not turn-by-turn navigation. To go further, swap the graph builder for OpenStreetMap / Google Routes data.
+- The accident data is synthetic (`benchmark/generate_data.py`). Replace it with real records before drawing real-world conclusions.
+- The RAPIDS/cuDF benchmark only runs on an NVIDIA GPU; no GPU numbers are claimed here.
 
-1. Push this repo to GitHub
-2. On Streamlit Cloud: **New app** → select repo → set main file path to `backend/streamlit_app.py`
-3. Add `GEMINI_API_KEY` (and `GOOGLE_CLOUD_PROJECT` if using BigQuery) under **Advanced settings → Secrets**
-4. Deploy
+## Security
 
-**Live app:** _[add your deployed Streamlit URL here]_
+Never commit `.env`. API keys and the admin password come from environment variables only.
 
----
-
-## 🔐 Admin access
-
-The admin panel (event overrides) uses a demo password: `admin123`
-
----
-
-## 📊 Dataset
-
-`vizag_accidents.csv` contains 50,000+ synthetically generated but realistically distributed accident records across 10 major Visakhapatnam roads, with fields for road name, date, hour, weather, cause, severity, vehicles involved, injuries, fatalities, and computed risk score.
-
----
-
-## 🙋 Team / Hackathon
-
-Built for the APAC GenAI Hackathon 2026 — Decision Intelligence Platform track, Urban Mobility and Transportation.
+## Location data
+`data/vizag_roads.json` coordinates were corrected from Wikipedia infobox / OpenStreetMap-derived
+sources (RK Beach 17.7142, 83.3236; NAD Junction 17.7424, 83.2366; MVP Colony 17.7414, 83.3387;
+Hanumanthawaka 17.7602, 83.3258; Kommadi 17.8428, 83.3215; ...). "NH16 Bypass" and the hotspot
+polylines are approximate. To change a place, edit its `lat`/`lng` (right-click the spot in Google
+Maps to copy them). `tests/test_road_router.py::test_real_data_coordinates_are_sane` guards against
+bad values.

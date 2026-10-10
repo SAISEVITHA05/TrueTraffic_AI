@@ -1,6 +1,9 @@
 import pandas as pd
 import numpy as np
 import time
+from pathlib import Path
+
+DATA = Path(__file__).resolve().parent.parent / "data" / "vizag_accidents.csv"
 
 print("=" * 50)
 print("TrueTraffic AI — Acceleration Benchmark")
@@ -8,7 +11,7 @@ print("pandas vs NVIDIA RAPIDS cuDF")
 print("=" * 50)
 
 # Load dataset
-df_pandas = pd.read_csv("../data/vizag_accidents.csv")
+df_pandas = pd.read_csv(DATA)
 print(f"\nDataset size: {len(df_pandas):,} records\n")
 
 # --- PANDAS BENCHMARK ---
@@ -36,7 +39,7 @@ print(f"pandas average time: {pandas_time:.3f} seconds")
 try:
     import cudf # type: ignore
     print("\nRunning with NVIDIA RAPIDS cuDF...")
-    df_cudf = cudf.read_csv("../data/vizag_accidents.csv")
+    df_cudf = cudf.read_csv(DATA)
 
     start = time.time()
     for _ in range(5):
@@ -52,18 +55,10 @@ try:
     speedup = pandas_time / cudf_time
     print(f"\n🚀 RAPIDS is {speedup:.1f}x FASTER than pandas!")
     print(f"Time saved per query: {pandas_time - cudf_time:.3f} seconds")
-    print("\nAt 10,000 simultaneous users during Sankranti:")
-    print(f"  pandas total: {pandas_time * 10000:.0f} seconds")
-    print(f"  cuDF total:   {cudf_time * 10000:.0f} seconds")
 
 except ImportError:
-    print("\n⚠️  cuDF not available locally (needs NVIDIA GPU)")
-    print("Run this on Google Colab with T4 GPU for real benchmark")
-    print("\nSimulated results for demo purposes:")
-    simulated_cudf = pandas_time / 26
-    print(f"pandas time:  {pandas_time:.3f}s")
-    print(f"cuDF time:    {simulated_cudf:.3f}s  (estimated)")
-    print(f"Speedup:      26x faster 🚀")
+    print("\ncuDF not available (requires an NVIDIA GPU, e.g. a Colab T4 runtime).")
+    print("Only the measured pandas result above is reported - no GPU numbers are estimated.")
 
 print("\nRisk scores by road:")
 print(risk_scores[["road_name", "avg_risk",

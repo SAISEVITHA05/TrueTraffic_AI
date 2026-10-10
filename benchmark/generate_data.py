@@ -75,8 +75,10 @@ for i in range(50000):
 
 df = pd.DataFrame(rows)
 
-os.makedirs("../data", exist_ok=True)
-df.to_csv("../data/vizag_accidents.csv", index=False)
+from pathlib import Path
+DATA_DIR = Path(__file__).resolve().parent.parent / "data"
+DATA_DIR.mkdir(exist_ok=True)
+df.to_csv(DATA_DIR / "vizag_accidents.csv", index=False)
 
 print(f"✅ Dataset created: {len(df)} records")
 print(f"📁 Saved to: data/vizag_accidents.csv")

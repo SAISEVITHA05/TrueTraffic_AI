@@ -84,8 +84,8 @@
         <div style="font-size:2rem;margin-bottom:0.8rem">⚡</div>
         <h3 style="margin-bottom:0.5rem">AI Calculates Risk</h3>
         <p style="color:var(--text-muted);font-size:0.9rem;line-height:1.6">
-          NVIDIA RAPIDS processes 50,000 accident
-          records in 1.6 seconds to score your route.
+          We score every road using 50,000 historical accident
+          records plus time of day, weather and day of week.
         </p>
       </div>
       <div class="card">
@@ -114,12 +114,12 @@
   <!-- Footer -->
   <footer class="footer">
     🚦 TrueTraffic AI — Visakhapatnam |
-    Powered by Gemini AI + NVIDIA RAPIDS + BigQuery |
+    Powered by Gemini AI + Flask + pandas |
     Built for APAC GenAI Hackathon 2026
   </footer>
 
   <script>
-    const API = 'http://127.0.0.1:5000';
+    const API = '';  // same-origin: Flask serves both API and frontend
 
     // Get current hour and day
     const now = new Date();

@@ -1,0 +1,3 @@
+-r requirements.txt
+google-cloud-bigquery>=3.20
+db-dtypes>=1.2

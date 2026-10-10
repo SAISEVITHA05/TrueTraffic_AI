@@ -133,7 +133,21 @@
           <span style="color:var(--safe)">● Safe</span>
           <span style="color:var(--warning)">● Medium</span>
           <span style="color:var(--primary)">● High Risk</span>
+          <span style="color:var(--text-muted)">(thin lines = accident hotspots)</span>
         </div>
+      </div>
+      <div class="card" style="margin-bottom:1rem;display:flex;flex-wrap:wrap;
+        gap:1rem;font-size:0.8rem;align-items:center">
+        <b>Show on map:</b>
+        <button id="toggle-fastest" onclick="selectRoute('fastest')" class="legend-btn"
+          style="color:#3B82F6">Fastest</button>
+        <button id="toggle-safest" onclick="selectRoute('safest')" class="legend-btn"
+          style="color:#2DC653">Safest</button>
+        <button id="toggle-recommended" onclick="selectRoute('recommended')" class="legend-btn"
+          style="color:#A855F7">Recommended</button>
+        <span>🟢 A = start &nbsp; 🔴 B = destination</span>
+        <span style="color:var(--text-muted)">One route is shown at a time — use the tabs or click a card</span>
+        <span style="color:var(--text-muted);flex-basis:100%">Fastest = quickest by road speed limits (exact shortest-time search, no live traffic). Recommended may take up to 25% longer, Safest up to 75% longer, only when that clearly cuts risk; otherwise they stay on the fastest road.</span>
       </div>
       <div class="map-container">
         <div id="map"></div>
@@ -155,13 +169,20 @@
   <!-- Footer -->
   <footer class="footer">
     🚦 TrueTraffic AI — Visakhapatnam |
-    Powered by Gemini AI + NVIDIA RAPIDS + BigQuery
+    Powered by Gemini AI + Flask + pandas
   </footer>
 
   <script>
-    const API = 'http://127.0.0.1:5000';
-    let map, roadData, currentRouteLayer = null;
+    const API = '';  // same-origin: Flask serves both API and frontend
+    let map, roadData, lastRoutes = {}, selectedKind = 'recommended';
     let allMarkers = [];
+    let routeLayers = {};      // kind -> L.polyline
+    let routeExtras = [];      // start/end markers + connectors
+    const ROUTE_COLORS = {
+      fastest: '#3B82F6',      // blue
+      safest: '#2DC653',       // green
+      recommended: '#A855F7'   // purple
+    };
 
     // Days array
     const days = ['Sunday','Monday','Tuesday',
@@ -210,8 +231,8 @@
         if (road.coordinates && road.coordinates.length > 1) {
           const line = L.polyline(road.coordinates, {
             color: color,
-            weight: 5,
-            opacity: 0.8
+            weight: 4,
+            opacity: 0.55
           }).addTo(map);
 
           line.bindPopup(`
@@ -316,13 +337,15 @@
       const hour = parseInt(timeVal.split(':')[0]);
       const day = days[new Date().getDay()];
 
+      if (map) clearRoutes();
+
       // Show results panel
       document.getElementById('routeResults')
         .style.display = 'block';
       document.getElementById('routeCards').innerHTML =
         '<div class="loading"><span class="spinner"></span> Calculating routes...</div>';
       document.getElementById('aiText').innerHTML =
-        '<span class="spinner"></span> Gemini is analyzing...';
+        '<span class="spinner"></span> AI is analyzing...';
 
       try {
         const res = await fetch(`${API}/api/routes`, {
@@ -334,6 +357,12 @@
         });
 
         const data = await res.json();
+        if (!res.ok) {
+          document.getElementById('routeCards').innerHTML =
+            `<div class="alert alert-danger">❌ ${data.error || 'Could not calculate routes'}</div>`;
+          document.getElementById('aiText').textContent = '';
+          return;
+        }
         displayRoutes(data);
         checkSpecialEvents();
 
@@ -341,7 +370,7 @@
         document.getElementById('routeCards').innerHTML =
           `<div class="alert alert-danger">
             ❌ Could not connect to backend.
-            Make sure Flask is running!
+            Please try again in a moment.
           </div>`;
       }
     }
@@ -349,6 +378,7 @@
     // ── Display Routes ───────────────────────────
     function displayRoutes(data) {
       const { routes, ai_explanation } = data;
+      lastRoutes = routes;
       const cards = document.getElementById('routeCards');
 
       cards.innerHTML = `
@@ -357,8 +387,17 @@
         ${routeCard(routes.recommended, 'recommended', '⭐')}
       `;
 
-      // Highlight recommended on map
-      highlightRoute(routes.recommended, '#E63946');
+      // Draw ALL three complete routes + exact start/end markers
+      drawRoutes(routes, 'recommended');
+
+      if (routes.blocked_roads && routes.blocked_roads.length) {
+        cards.insertAdjacentHTML('afterbegin',
+          `<div class="alert alert-warning">🚧 Closed by admin: ${routes.blocked_roads.join(', ')}</div>`);
+      }
+      if (routes.recommended.note) {
+        cards.insertAdjacentHTML('beforeend',
+          `<div style="font-size:0.8rem;color:var(--text-muted)">${routes.recommended.note}</div>`);
+      }
 
       // Show AI explanation
       document.getElementById('aiText').textContent =
@@ -368,9 +407,8 @@
     function routeCard(route, type, icon) {
       const isRec = type === 'recommended';
       return `
-        <div class="route-card ${type}"
-          onclick="highlightRoute(${JSON.stringify(route)},
-            '${getRouteColor(type)}')"
+        <div class="route-card ${type}" id="card-${type}"
+          onclick="selectRoute('${type}')"
           style="margin-bottom:0.8rem;cursor:pointer">
           ${isRec ?
             '<div class="recommended-badge">⭐ BEST</div>' : ''}
@@ -391,37 +429,120 @@
           </div>
           <div style="font-size:0.75rem;
             color:var(--text-muted);margin-top:0.5rem">
-            via ${route.roads.map(r=>r.name).join(' → ')}
+            via ${(route.via && route.via.length)
+              ? route.via.join(' → ') : 'local streets'}
           </div>
+          ${route.roads && route.roads.length ? `
+          <div style="font-size:0.75rem;color:var(--warning);margin-top:0.3rem">
+            ⚠ Passes high-risk spot${route.roads.length > 1 ? 's' : ''}:
+            ${route.roads.map(r => `${r.name} (${r.risk})`).join(', ')}
+          </div>` : `
+          <div style="font-size:0.75rem;color:var(--safe);margin-top:0.3rem">
+            ✔ Avoids known accident hotspots
+          </div>`}
+          ${type !== 'fastest' && route.overlap_with_fastest != null ? `
+          <div style="font-size:0.75rem;color:var(--text-muted);margin-top:0.3rem">
+            ${route.overlap_with_fastest >= 100 ? 'Identical to the Fastest route'
+              : `Shares ${route.overlap_with_fastest}% of its roads with the Fastest route`}
+          </div>` : ''}
+          ${route.same_as && route.same_as.length ? `
+          <div style="font-size:0.75rem;color:var(--text-muted);margin-top:0.3rem">
+            Same road as ${route.same_as.map(k => k[0].toUpperCase() + k.slice(1)).join(' & ')}
+          </div>` : ''}
         </div>
       `;
     }
 
-    // ── Highlight Route On Map ───────────────────
-    function highlightRoute(route, color) {
-      if (currentRouteLayer) {
-        map.removeLayer(currentRouteLayer);
-      }
+    // ── Draw all routes + start/end markers ──────
+    function pinIcon(letter, color) {
+      return L.divIcon({
+        className: '',
+        html: `<div style="background:${color};color:#fff;width:30px;height:30px;
+          border-radius:50% 50% 50% 0;transform:rotate(-45deg);
+          border:3px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,.6);
+          display:flex;align-items:center;justify-content:center">
+          <b style="transform:rotate(45deg);font-size:14px">${letter}</b></div>`,
+        iconSize: [30, 30], iconAnchor: [4, 30], popupAnchor: [10, -28]
+      });
+    }
 
-      if (route.roads && route.roads.length > 0) {
-        const allCoords = [];
-        route.roads.forEach(road => {
-          if (road.coords) {
-            road.coords.forEach(c => allCoords.push(c));
-          }
+    function clearRoutes() {
+      Object.values(routeLayers).forEach(l => map.removeLayer(l));
+      routeExtras.forEach(l => map.removeLayer(l));
+      routeLayers = {}; routeExtras = [];
+    }
+
+    // Only ONE route is shown on the map at a time. Pick it with the tabs above the map
+    // or by clicking a route card.
+    const SHOWN_WEIGHT = 8;
+
+    function drawRoutes(routes, select) {
+      clearRoutes();
+      ['fastest', 'safest', 'recommended'].forEach(kind => {
+        const r = routes[kind];
+        const coords = routePath(r);
+        if (!coords.length) return;
+        // built now, but only added to the map by selectRoute()
+        routeLayers[kind] = L.polyline(coords, {
+          color: ROUTE_COLORS[kind], weight: SHOWN_WEIGHT, opacity: 0.95,
+          lineJoin: 'round', lineCap: 'round'
         });
+        routeLayers[kind].bindTooltip(
+          `${r.name}: ${r.time} min · ${r.distance} km · risk ${r.risk_score}/100`,
+          { sticky: true });
+      });
 
-        if (allCoords.length > 0) {
-          currentRouteLayer = L.polyline(allCoords, {
-            color: color,
-            weight: 8,
-            opacity: 0.9,
-            dashArray: type === 'fastest' ? '10,5' : null
-          }).addTo(map);
+      // Exact start / destination markers, plus a dashed link to the road
+      const ref = routes.recommended;
+      const start = ref.origin_point, end = ref.destination_point;
+      if (start && end) {
+        routeExtras.push(
+          L.marker(start, { icon: pinIcon('A', '#2DC653'), zIndexOffset: 1000 })
+            .bindPopup(`<b>Start: ${ref.origin}</b>`).addTo(map),
+          L.marker(end, { icon: pinIcon('B', '#E63946'), zIndexOffset: 1000 })
+            .bindPopup(`<b>Destination: ${ref.destination}</b>`).addTo(map)
+        );
+        [[start, ref.origin_snapped], [end, ref.destination_snapped]].forEach(([pt, snap]) => {
+          if (snap) routeExtras.push(L.polyline([pt, snap], {
+            color: '#ffffff', weight: 3, dashArray: '2,6', opacity: 0.8
+          }).addTo(map));
+        });
+      }
+      selectRoute(select || 'recommended');
+    }
 
-          map.fitBounds(currentRouteLayer.getBounds(),
-            { padding: [40, 40] });
+    function routePath(r) {
+      let coords = (r.path && r.path.length) ? r.path
+        : (r.roads || []).flatMap(x => x.coords || []);
+      // guarantee the line touches the exact start and end points
+      if (coords.length && r.origin_point &&
+          map.distance(coords[0], r.origin_point) > 5) coords = [r.origin_point, ...coords];
+      if (coords.length && r.destination_point &&
+          map.distance(coords[coords.length - 1], r.destination_point) > 5)
+        coords = [...coords, r.destination_point];
+      return coords;
+    }
+
+    // ── Show exactly one route on the map ─────────
+    function selectRoute(kind) {
+      selectedKind = kind;
+      Object.entries(routeLayers).forEach(([k, layer]) => {
+        if (k === kind) layer.addTo(map); else map.removeLayer(layer);
+      });
+      ['fastest', 'safest', 'recommended'].forEach(k => {
+        const card = document.getElementById('card-' + k);
+        if (card) card.classList.toggle('selected-route', k === kind);
+        const tab = document.getElementById('toggle-' + k);
+        if (tab) {
+          tab.classList.toggle('active', k === kind);
+          tab.style.background = k === kind ? ROUTE_COLORS[k] : 'transparent';
+          tab.style.color = k === kind ? '#fff' : ROUTE_COLORS[k];
         }
+      });
+      const sel = routeLayers[kind];
+      if (sel) {
+        sel.bringToFront();
+        map.fitBounds(sel.getBounds(), { padding: [60, 60] });
       }
     }
 
@@ -486,9 +607,7 @@
     }
 
     function getRouteColor(type) {
-      if (type === 'fastest') return '#F4A261';
-      if (type === 'safest') return '#2DC653';
-      return '#E63946';
+      return ROUTE_COLORS[type];
     }
 
     // ── Init ─────────────────────────────────────

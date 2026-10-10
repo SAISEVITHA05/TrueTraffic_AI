@@ -204,6 +204,8 @@ body {
   font-size: 1.8rem;
   font-weight: 800;
   color: var(--primary);
+  overflow-wrap: anywhere;
+  line-height: 1.15;
 }
 
 .stat-label {
@@ -292,7 +294,7 @@ body {
 }
 
 .route-card.fastest {
-  border-top: 3px solid var(--warning);
+  border-top: 3px solid #3B82F6;
 }
 
 .route-card.safest {
@@ -300,8 +302,8 @@ body {
 }
 
 .route-card.recommended {
-  border-top: 3px solid var(--primary);
-  box-shadow: 0 0 20px var(--glow);
+  border-top: 3px solid #A855F7;
+  box-shadow: 0 0 20px rgba(168, 85, 247, 0.3);
 }
 
 .route-card .route-type {
@@ -312,9 +314,9 @@ body {
   margin-bottom: 0.5rem;
 }
 
-.route-card.fastest .route-type { color: var(--warning); }
+.route-card.fastest .route-type { color: #3B82F6; }
 .route-card.safest .route-type { color: var(--safe); }
-.route-card.recommended .route-type { color: var(--primary); }
+.route-card.recommended .route-type { color: #A855F7; }
 
 .route-card .route-time {
   font-size: 2rem;
@@ -574,3 +576,9 @@ body {
   color: var(--text-muted);
   font-size: 0.75rem;
 }
+/* route legend toggle buttons */
+.legend-btn {
+  background: none; border: 1px solid var(--border); border-radius: 6px;
+  padding: 0.2rem 0.6rem; font: inherit; font-weight: 600; cursor: pointer;
+}
+.legend-btn:hover { background: rgba(255,255,255,0.06); }

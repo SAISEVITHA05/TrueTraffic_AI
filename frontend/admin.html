@@ -70,7 +70,7 @@
       </button>
       <p style="margin-top:1rem;font-size:0.75rem;
         color:var(--text-muted)">
-        Demo password: admin123
+        Set via the ADMIN_PASSWORD environment variable
       </p>
     </div>
   </div>
@@ -263,22 +263,46 @@
   </footer>
 
   <script>
-    const API = 'http://127.0.0.1:5000';
+    const API = '';  // same-origin: Flask serves both API and frontend
     let isLoggedIn = false;
 
-    // ── Login ────────────────────────────────────
-    function login() {
-      const pwd =
-        document.getElementById('passwordInput').value;
-      if (pwd === 'admin123') {
-        document.getElementById('loginOverlay')
-          .style.display = 'none';
-        isLoggedIn = true;
-        loadEvents();
-      } else {
-        document.getElementById('loginError')
-          .style.display = 'block';
+    // ── Login (server-verified; token kept in sessionStorage) ──
+    function authHeaders() {
+      return {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + (sessionStorage.getItem('tt_token') || '')
+      };
+    }
+
+    async function login() {
+      const pwd = document.getElementById('passwordInput').value;
+      try {
+        const res = await fetch(`${API}/api/admin/login`, {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({password: pwd})
+        });
+        const data = await res.json();
+        if (res.ok && data.token) {
+          sessionStorage.setItem('tt_token', data.token);
+          document.getElementById('loginOverlay').style.display = 'none';
+          isLoggedIn = true;
+          loadEvents();
+        } else {
+          const err = document.getElementById('loginError');
+          err.textContent = '❌ ' + (data.error || 'Wrong password');
+          err.style.display = 'block';
+        }
+      } catch (e) {
+        const err = document.getElementById('loginError');
+        err.textContent = '❌ Could not reach server';
+        err.style.display = 'block';
       }
+    }
+
+    function showLogin() {
+      sessionStorage.removeItem('tt_token');
+      document.getElementById('loginOverlay').style.display = '';
     }
 
     // ── Load Events ──────────────────────────────
@@ -362,9 +386,8 @@
       try {
         const res = await fetch(`${API}/api/events`, {
           method: 'POST',
-          headers: {'Content-Type': 'application/json'},
+          headers: authHeaders(),
           body: JSON.stringify({
-            password: 'admin123',
             road, type,
             start_time: startTime,
             end_time: endTime,
@@ -375,6 +398,11 @@
 
         const data = await res.json();
 
+        if (res.status === 401) { showLogin(); return; }
+        if (!res.ok) {
+          resultDiv.innerHTML = `<div class="alert alert-danger">❌ ${data.error || 'Could not apply override'}</div>`;
+          return;
+        }
         if (data.success) {
           resultDiv.innerHTML = `
             <div class="alert alert-success">
@@ -400,11 +428,12 @@
       )) return;
 
       try {
-        await fetch(`${API}/api/events/clear`, {
+        const r = await fetch(`${API}/api/events/clear`, {
           method: 'POST',
-          headers: {'Content-Type': 'application/json'},
-          body: JSON.stringify({password: 'admin123'})
+          headers: authHeaders(),
+          body: '{}'
         });
+        if (r.status === 401) { showLogin(); return; }
         loadEvents();
       } catch(e) {
         alert('Could not clear events.');
@@ -413,10 +442,13 @@
 
     // ── Remove Single Event ──────────────────────
     async function removeEvent(index) {
-      // For demo — just clear all
-      // In production would delete by index
       if (!confirm('Remove this restriction?')) return;
-      clearAllEvents();
+      const r = await fetch(`${API}/api/events/${index}`, {
+        method: 'DELETE',
+        headers: authHeaders()
+      });
+      if (r.status === 401) { showLogin(); return; }
+      loadEvents();
     }
   </script>
 

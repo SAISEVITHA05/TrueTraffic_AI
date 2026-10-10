@@ -21,6 +21,7 @@
       margin: 2rem 0;
     }
     .metric-card {
+      min-width: 0;           /* let long values wrap instead of overlapping */
       background: var(--bg-card);
       border: 1px solid var(--border);
       border-radius: 12px;
@@ -33,11 +34,13 @@
       transform: translateY(-2px);
     }
     .metric-value {
-      font-size: 2.5rem;
+      font-size: clamp(1.4rem, 2.6vw, 2.2rem);
       font-weight: 800;
       color: var(--primary);
-      line-height: 1;
+      line-height: 1.1;
       margin: 0.5rem 0;
+      overflow-wrap: anywhere;
+      word-break: break-word;
     }
     .metric-label {
       font-size: 0.8rem;
@@ -136,7 +139,7 @@
     </h1>
     <p style="color:var(--text-muted)">
       Real-time accident intelligence powered by
-      NVIDIA RAPIDS + BigQuery
+      historical accident data (50,000+ records)
     </p>
   </div>
 
@@ -223,80 +226,15 @@
 
     <!-- NVIDIA Acceleration Section -->
     <div class="acceleration-box">
-      <div class="hero-badge">⚡ NVIDIA RAPIDS Acceleration</div>
+      <div class="hero-badge">⚡ Performance</div>
       <h2 style="font-size:1.5rem;margin:1rem 0">
-        26x Faster Than Traditional Processing
+        50,000 records, aggregated in milliseconds
       </h2>
-      <p style="color:var(--text-muted);max-width:600px;
-        margin:0 auto 1.5rem;line-height:1.6">
-        During peak hours, thousands of Vizag commuters
-        query routes simultaneously. NVIDIA RAPIDS cuDF
-        processes all 50,000 accident records in real-time
-        — making instant safety decisions possible.
-      </p>
-
-      <div class="speed-compare">
-        <div class="speed-box">
-          <div class="speed-value"
-            style="color:var(--text-muted)">
-            43s
-          </div>
-          <div class="speed-label">
-            Traditional pandas<br>processing time
-          </div>
-        </div>
-        <div style="font-size:2rem">⚡</div>
-        <div class="speed-box">
-          <div class="speed-value"
-            style="color:var(--primary)">
-            1.6s
-          </div>
-          <div class="speed-label">
-            NVIDIA RAPIDS cuDF<br>processing time
-          </div>
-        </div>
-      </div>
-
-      <!-- Progress bars -->
-      <div style="max-width:500px;margin:0 auto">
-        <div style="margin-bottom:0.8rem">
-          <div style="display:flex;justify-content:space-between;
-            font-size:0.8rem;margin-bottom:0.3rem">
-            <span style="color:var(--text-muted)">pandas</span>
-            <span style="color:var(--text-muted)">43s</span>
-          </div>
-          <div style="background:var(--bg-card2);
-            border-radius:4px;height:8px">
-            <div style="width:100%;height:100%;
-              background:var(--border);border-radius:4px">
-            </div>
-          </div>
-        </div>
-        <div>
-          <div style="display:flex;justify-content:space-between;
-            font-size:0.8rem;margin-bottom:0.3rem">
-            <span style="color:var(--primary)">
-              NVIDIA RAPIDS
-            </span>
-            <span style="color:var(--primary)">1.6s</span>
-          </div>
-          <div style="background:var(--bg-card2);
-            border-radius:4px;height:8px">
-            <div id="rapidsBar" style="width:0%;height:100%;
-              background:var(--primary);border-radius:4px;
-              transition:width 2s ease">
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <p style="margin-top:1.5rem;font-size:0.85rem;
-        color:var(--text-muted)">
-        At 10,000 simultaneous users during Sankranti:
-        pandas = 430,000s total |
-        <span style="color:var(--primary)">
-          RAPIDS = 16,000s total
-        </span>
+      <p style="color:var(--text-muted);max-width:600px;margin:0 auto;line-height:1.6">
+        Accident statistics are computed once with pandas (about 20&nbsp;ms on a
+        laptop for the full per-road aggregation) and cached, so each dashboard
+        load is instant. A GPU (RAPIDS cuDF) benchmark script is included in
+        <code>benchmark/</code> for much larger datasets.
       </p>
     </div>
 
@@ -318,12 +256,12 @@
   <!-- Footer -->
   <footer class="footer">
     🚦 TrueTraffic AI — Visakhapatnam |
-    Powered by Gemini AI + NVIDIA RAPIDS + BigQuery |
+    Powered by Gemini AI + historical accident data (50,000+ records) |
     Built for APAC GenAI Hackathon 2026
   </footer>
 
   <script>
-    const API = 'http://127.0.0.1:5000';
+    const API = '';  // same-origin: Flask serves both API and frontend
 
     // Chart defaults
     Chart.defaults.color = '#8B949E';
@@ -566,11 +504,6 @@
       document.getElementById('m3').textContent = '20:00';
       document.getElementById('m5').textContent = 'Speeding';
     }
-
-    // Animate RAPIDS bar
-    setTimeout(() => {
-      document.getElementById('rapidsBar').style.width = '4%';
-    }, 500);
 
     loadDashboard();
   </script>
