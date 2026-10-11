@@ -1,4 +1,5 @@
 # 🚦 TrueTraffic AI
+**Live demo:** https://truetraffic-ai-1.onrender.com
 
 **AI-assisted road-safety and route intelligence for Visakhapatnam.**
 Instead of one "fastest" answer, TrueTraffic AI gives three options - **Fastest, Safest and Recommended** - scored with a live risk model built from 50,000 historical accident records, and explains the trade-off in plain language.
